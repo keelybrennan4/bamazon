@@ -30,6 +30,7 @@ function displayItems() {
     })
 }
 
+//prompt which item user would like to purchase 
 function initialPrompt() {
     inquirer.prompt([
     {
@@ -44,7 +45,6 @@ function initialPrompt() {
             }
         }
     },
-        
     {
         name: "stock_quantity",
         type: "input",
@@ -64,90 +64,37 @@ function initialPrompt() {
             var chosenQuantity = input.stock_quantity;
 
             // query bamazon database to confirm that the given item ID exists in the desired quantity
-            var query = "SELECT item_id, product_name, price, stock_quantity FROM products WHERE ?"
+            var query = "SELECT item_id, product_name, price, stock_quantity FROM products WHERE ?";
             
-            connection.query(query, { item_id: input.item_id },function (err, res){
-                    //if (err) throw err;
-                    if (res.length == 0){
-                        console.log("ERROR! Invalid Item ID. Please select a valid Item ID from the list below:");
-                        displayItems();
+            connection.query(query, {item_id: input.item_id},function (err, res){
+                //if (err) throw err;
+                if (res.length == 0){
+                    console.log("ERROR! Invalid Item ID. Please select a valid Item ID from the list below:");
+                    displayItems();
 
-                    }else {
-                        if (chosenQuantity < res[0].stock_quantity);
-                        console.log("We're placing your order now!");
-                        console.log(chosenItem);
-
-                //update bamazon database inventory 
-                        
-                //connection.query(
-                    //                         
-                    "UPDATE products SET ? WHERE ?",
-
-
-                        //console.log(res[0].stock_quantity);
-                        console.log(res[0].item_id);
-                        console.log(res[0].product_name);
-                        console.log(res[0].price);
-
+                }else {
+                    if (chosenQuantity <= res[0].stock_quantity){
                         var price = res[0].price;
-                        console.log(price);
-                        console.log(chosenQuantity);
                         console.log("Your total is $" + price*chosenQuantity);
+                        //console.log("SUCCESS! Your order has been placed!");
+                        //console.log(chosenItem);
+
+                        //update bamazon database inventory 
+                        var updateQuery = "UPDATE products SET stock_quantity = " + (res[0].stock_quantity - chosenQuantity) + " WHERE item_id = " + chosenItem;
+                        connection.query(updateQuery, [{stock_quantity: input.stock_quantity},{item_id: chosenItem}], function(err, res){
+                            if (err) throw err;
+                            console.log("SUCCESS! Your order has been placed!");
+                            connection.end();
+                    })
+                    }else{
+                        console.log("ERROR! Insufficient stock!");
+                        console.log("Please modify your order by selecting from the options below:");
+                        displayItems();
                     }
-            })
-        })
+                }       
+            }
 
+        );      
+});
 }
-
-//                    //update db inventory 
-//                    // connection.query("SELECT * FROM products WHERE ?",
-//                     connection.query(
-//                         "UPDATE products SET ? WHERE ?",
-//                         [
-//                          {
-//                             stock_quantity: input.stock_quantity
-//                          },
-//                          {
-//                             item_id: chosenItem
-//                          }
-//                         ], 
-//                     function(err, data){
-//                         if (err) throw err;
-//                         console.log(data[0].price * quantity);
-
-//                         console.log("SUCCESS! Your order has been placed! Your total is $" + (input.stock_quantity * price[0]));
-//                         //end db connection
-//                         connection.end();
-//                     })
-
-//                     } else {
-//                         console.log("ERROR! Insufficient stock!");
-//                         console.log("Please modify your order by selecting from the options below:");
-//                         displayItems();
-//                     };
-                
-//             });
-            
-//     });
-
-// };
-
-
-// function continueShopping() {
-//     inquirer.prompt({
-//         name: "answer",
-//         type: "input",
-//         message: "\n Do you need anything else (y/n)?"
-//     }).then(function(answer) {
-//         var answer = answer.answer.toLowerCase();
-//         if (answer == 'y') {
-//             console.log("\n");
-//             displayItems();
-//         } else {
-//             console.log("\nThank you again for dropping by.");
-//             connection.end();
-//         }
-//     })  
-// }
-
 dbConnect();
